@@ -3,6 +3,7 @@ import { devtools } from 'zustand/middleware';
 import type { NearbyUser, Coordinates } from '@/lib/validations';
 import type { DiscoveryMode } from '@/types';
 import { usersService, geolocationService, wifiService, bluetoothService } from '@/services';
+import { locationService } from '@/services/locationService';
 
 interface DiscoveryState {
   // Discovery mode and settings
@@ -110,19 +111,11 @@ export const useDiscoveryStore = create<DiscoveryState>()(
         try {
           set({ locationError: null });
           
-          const permission = await geolocationService.checkPermission();
-          if (permission !== 'granted') {
-            const requestResult = await geolocationService.requestPermission();
-            if (requestResult !== 'granted') {
-              throw new Error('Location permission denied');
-            }
-          }
+          // Get current position using the location service
+          const position = await locationService.getCurrentPosition();
           
-          const position = await geolocationService.getCurrentPosition({
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 60000,
-          });
+          // Update location in backend
+          await locationService.updateLocation(position);
           
           const coordinates = {
             latitude: position.latitude,
@@ -130,8 +123,6 @@ export const useDiscoveryStore = create<DiscoveryState>()(
             accuracy: position.accuracy,
           };
           
-          // Update location in backend
-          await usersService.updateLocation(coordinates);
           set({ lastLocation: coordinates, locationError: null });
           
         } catch (error) {
