@@ -144,8 +144,8 @@ export const useDiscoveryStore = create<DiscoveryState>()(
           const network = await wifiService.getNetwork();
           const bssid = network.bssid;
           
-          // Update presence in backend
-          await usersService.updatePresence({ bssid });
+          // Update presence in backend using discovery service
+          await discoveryService.updateWiFiPresence(bssid);
           set({ currentNetwork: bssid || null, wifiError: null });
           
         } catch (error) {
@@ -241,11 +241,11 @@ export const useDiscoveryStore = create<DiscoveryState>()(
           // First update WiFi presence
           await get().updateWiFiPresence();
           
-          // Then discover nearby users
-          const nearbyUsers = await usersService.getNearbyByWiFi();
+          // Then discover nearby users using discovery service
+          const response = await discoveryService.discoverByWiFi();
           
           set({ 
-            lastResults: nearbyUsers,
+            lastResults: response.users,
             lastDiscoveryTime: new Date(),
             isDiscovering: false,
             error: null
