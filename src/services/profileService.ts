@@ -58,15 +58,12 @@ class ProfileService extends APIService {
 
   /**
    * Upload profile picture
-   * This will be implemented when we add Cloudinary support
    */
-  async uploadProfilePicture(file: File): Promise<{ url: string }> {
+  async uploadProfilePicture(file: File): Promise<{ url: string; publicId: string }> {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', 'profile_pictures');
     
-    // This will be updated with actual Cloudinary integration
-    return this.post<{ url: string }>('/api/upload/profile-picture', formData);
+    return this.post<{ url: string; publicId: string }>('/api/upload/profile-picture', formData);
   }
 }
 
