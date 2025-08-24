@@ -268,14 +268,12 @@ export const useDiscoveryStore = create<DiscoveryState>()(
           // First scan for Bluetooth devices
           await get().scanBluetooth();
           
-          // Then discover nearby users
+          // Then discover nearby users using discovery service
           const { bluetoothDevices } = get();
-          const nearbyUsers = await usersService.getNearbyByBluetooth({
-            nearbyDevices: bluetoothDevices
-          });
+          const response = await discoveryService.discoverByBluetooth(bluetoothDevices);
           
           set({ 
-            lastResults: nearbyUsers,
+            lastResults: response.users,
             lastDiscoveryTime: new Date(),
             isDiscovering: false,
             error: null

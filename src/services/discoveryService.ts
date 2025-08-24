@@ -69,7 +69,7 @@ class DiscoveryService extends APIService {
    * Discover nearby users via Bluetooth
    */
   async discoverByBluetooth(deviceIds: string[]): Promise<BluetoothDiscoveryResponse> {
-    return this.post<BluetoothDiscoveryResponse>('/api/discovery/bluetooth', { deviceIds });
+    return this.post<BluetoothDiscoveryResponse>('/api/discovery/bluetooth', { nearbyDevices: deviceIds });
   }
 
   /**
