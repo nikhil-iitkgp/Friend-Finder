@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import type { UserProfileResponse, ProfileUpdateInput } from '@/lib/validations';
-import { usersService } from '@/services';
+import type { User } from '@/types';
+import { profileService, type ProfileUpdateData } from '@/services/profileService';
 
 interface UserState {
   // User data
-  user: UserProfileResponse | null;
+  user: User | null;
   isLoading: boolean;
   error: string | null;
   
@@ -14,7 +14,7 @@ interface UserState {
   isInitialized: boolean;
   
   // Actions
-  setUser: (user: UserProfileResponse | null) => void;
+  setUser: (user: User | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setAuthenticated: (authenticated: boolean) => void;
@@ -22,7 +22,7 @@ interface UserState {
   
   // Async actions
   fetchCurrentUser: () => Promise<void>;
-  updateProfile: (data: ProfileUpdateInput) => Promise<void>;
+  updateProfile: (data: ProfileUpdateData) => Promise<void>;
   clearUser: () => void;
   
   // Privacy controls
@@ -52,9 +52,9 @@ export const useUserStore = create<UserState>()(
         fetchCurrentUser: async () => {
           try {
             set({ isLoading: true, error: null });
-            const user = await usersService.getCurrentUser();
+            const response = await profileService.getProfile();
             set({ 
-              user, 
+              user: response.user, 
               isAuthenticated: true, 
               isLoading: false,
               isInitialized: true 
@@ -74,9 +74,9 @@ export const useUserStore = create<UserState>()(
         updateProfile: async (data) => {
           try {
             set({ isLoading: true, error: null });
-            const updatedUser = await usersService.updateProfile(data);
+            const response = await profileService.updateProfile(data);
             set({ 
-              user: updatedUser, 
+              user: response.user, 
               isLoading: false 
             });
           } catch (error) {
@@ -103,9 +103,11 @@ export const useUserStore = create<UserState>()(
           
           try {
             set({ isLoading: true, error: null });
-            await usersService.toggleDiscoverable(!user.isDiscoverable);
+            const response = await profileService.updateProfile({
+              isDiscoverable: !user.isDiscoverable
+            });
             set({ 
-              user: { ...user, isDiscoverable: !user.isDiscoverable },
+              user: response.user,
               isLoading: false 
             });
           } catch (error) {
@@ -124,9 +126,11 @@ export const useUserStore = create<UserState>()(
           
           try {
             set({ isLoading: true, error: null });
-            await usersService.updateDiscoveryRange(range);
+            const response = await profileService.updateProfile({
+              discoveryRange: range
+            });
             set({ 
-              user: { ...user, discoveryRange: range },
+              user: response.user,
               isLoading: false 
             });
           } catch (error) {

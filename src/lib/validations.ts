@@ -62,9 +62,35 @@ export const ProfileUpdateSchema = z.object({
       \"Username can only contain letters, numbers, and underscores\"
     )
     .optional(),
+  firstName: z
+    .string()
+    .min(1, \"First name is required\")
+    .max(50, \"First name must not exceed 50 characters\")
+    .optional(),
+  lastName: z
+    .string()
+    .min(1, \"Last name is required\")
+    .max(50, \"Last name must not exceed 50 characters\")
+    .optional(),
   bio: z
     .string()
     .max(500, \"Bio must not exceed 500 characters\")
+    .optional(),
+  occupation: z
+    .string()
+    .max(100, \"Occupation must not exceed 100 characters\")
+    .optional(),
+  interests: z
+    .array(z.string().max(50, \"Interest must not exceed 50 characters\"))
+    .max(20, \"You can have at most 20 interests\")
+    .optional(),
+  birthday: z
+    .string()
+    .datetime(\"Invalid birthday format\")
+    .optional(),
+  profilePicture: z
+    .string()
+    .url(\"Invalid profile picture URL\")
     .optional(),
   isDiscoverable: z.boolean().optional(),
   discoveryRange: z
@@ -72,6 +98,13 @@ export const ProfileUpdateSchema = z.object({
     .min(100, \"Discovery range must be at least 100 meters\")
     .max(50000, \"Discovery range must not exceed 50km\")
     .optional(),
+  privacySettings: z.object({
+    showAge: z.boolean().optional(),
+    showLocation: z.boolean().optional(),
+    showLastSeen: z.boolean().optional(),
+    allowMessages: z.boolean().optional(),
+    allowCalls: z.boolean().optional(),
+  }).optional(),
 });
 
 export const UserProfileResponseSchema = z.object({
