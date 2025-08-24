@@ -4,6 +4,7 @@ import type { NearbyUser, Coordinates } from '@/lib/validations';
 import type { DiscoveryMode } from '@/types';
 import { usersService, geolocationService, wifiService, bluetoothService } from '@/services';
 import { locationService } from '@/services/locationService';
+import { discoveryService } from '@/services/discoveryService';
 
 interface DiscoveryState {
   // Discovery mode and settings
@@ -212,12 +213,12 @@ export const useDiscoveryStore = create<DiscoveryState>()(
           // First update location
           await get().updateLocation();
           
-          // Then discover nearby users
+          // Then discover nearby users using discovery service
           const { radius } = get();
-          const nearbyUsers = await usersService.getNearbyByGPS({ radius });
+          const response = await discoveryService.discoverByGPS({ radius });
           
           set({ 
-            lastResults: nearbyUsers,
+            lastResults: response.users,
             lastDiscoveryTime: new Date(),
             isDiscovering: false,
             error: null
