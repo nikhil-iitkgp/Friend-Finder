@@ -11,6 +11,7 @@ import { Slider } from '@/components/ui/slider';
 import { GoogleMap } from '@/components/maps/GoogleMap';
 import { useDiscoveryStore, useDiscoveryActions } from '@/store/discoveryStore';
 import { discoveryService } from '@/services/discoveryService';
+import { wifiService } from '@/services';
 import { toast } from 'sonner';
 import type { NearbyUser } from '@/lib/validations';
 
@@ -348,28 +349,128 @@ export default function DiscoverPage() {
           </div>
         </TabsContent>
 
-        {/* Wi-Fi Discovery Placeholder */}
-        <TabsContent value="wifi">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Wifi className="h-5 w-5 text-green-500" />
-                <span>Wi-Fi Network Discovery</span>
-              </CardTitle>
-              <CardDescription>
-                Find people connected to the same Wi-Fi network
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <Wifi className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                <p>Wi-Fi discovery will be implemented in the next step</p>
-                <p className="text-sm mt-2">
-                  Current network: {currentNetwork || 'Not connected'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Wi-Fi Discovery */}
+        <TabsContent value="wifi" className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Network Info & Controls */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center space-x-2">
+                    <Wifi className="h-5 w-5 text-green-500" />
+                    <span>Wi-Fi Network Discovery</span>
+                  </CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        // Update WiFi presence when button is clicked
+                        const network = await wifiService.getNetwork();
+                        if (network.bssid) {
+                          await discoveryService.updateWiFiPresence(network.bssid);
+                          toast.success('Wi-Fi presence updated!');
+                        } else {
+                          toast.error('No Wi-Fi network detected');
+                        }
+                      } catch (error) {
+                        toast.error('Failed to update Wi-Fi presence');
+                      }
+                    }}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Update Network
+                  </Button>
+                </div>
+                <CardDescription>
+                  Find people connected to the same Wi-Fi network
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Current Network Status */}
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <Wifi className="h-4 w-4 text-green-500" />
+                      <span className="font-medium">Current Network</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {currentNetwork ? (
+                        <span className="font-mono">{currentNetwork}</span>
+                      ) : (
+                        'Not connected to Wi-Fi'
+                      )}
+                    </p>
+                    {currentNetwork && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        People on this network can discover you
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* WiFi Instructions */}
+                  <div className="text-sm text-muted-foreground space-y-2">
+                    <p><strong>How Wi-Fi discovery works:</strong></p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>Connect to a Wi-Fi network</li>
+                      <li>Other FriendFinder users on the same network will appear</li>
+                      <li>Perfect for discovering people in cafes, offices, or events</li>
+                      <li>Your network information is kept private</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* WiFi Results */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>People on Network</span>
+                  <Badge variant="secondary">
+                    {lastResults.length} found
+                  </Badge>
+                </CardTitle>
+                {lastDiscoveryTime && (
+                  <CardDescription>
+                    Last updated: {discoveryService.getRelativeTime(lastDiscoveryTime)}
+                  </CardDescription>
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {currentNetwork ? (
+                    lastResults.length > 0 ? (
+                      lastResults.map((user) => (
+                        <UserCard
+                          key={user.id}
+                          user={user}
+                          onSendFriendRequest={handleSendFriendRequest}
+                          onSendMessage={handleSendMessage}
+                        />
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Wifi className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                        <p>No people found on this network</p>
+                        <p className="text-sm mt-2">
+                          Be the first to discover people here!
+                        </p>
+                      </div>
+                    )
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Wifi className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                      <p>Connect to Wi-Fi to discover people</p>
+                      <p className="text-sm mt-2">
+                        Join a Wi-Fi network to find others nearby
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Bluetooth Discovery Placeholder */}
