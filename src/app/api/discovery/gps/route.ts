@@ -99,6 +99,7 @@ export async function GET(request: NextRequest) {
           isFriend: 1,
           hasPendingRequest: 1,
           privacySettings: 1,
+          location: 1, // Include location for map display
         }
       },
       {
@@ -129,6 +130,11 @@ export async function GET(request: NextRequest) {
       showAge: user.privacySettings?.showAge ?? true,
       showLocation: user.privacySettings?.showLocation ?? true,
       showLastSeen: user.privacySettings?.showLastSeen ?? true,
+      // Include location for map display (only if user allows location sharing)
+      location: user.privacySettings?.showLocation !== false ? {
+        type: 'Point' as const,
+        coordinates: [user.location.coordinates[0], user.location.coordinates[1]] // [lng, lat]
+      } : undefined,
     }));
 
     return NextResponse.json({

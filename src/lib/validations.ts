@@ -171,11 +171,25 @@ export const BluetoothScanSchema = z.object({
 export const NearbyUserSchema = z.object({
   id: z.string(),
   username: z.string(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
   profilePicture: z.string().optional(),
+  bio: z.string().optional(),
+  interests: z.array(z.string()).optional(),
   distance: z.number().optional(), // in meters for GPS
   lastSeen: z.date(),
+  isOnline: z.boolean().optional(),
   isFriend: z.boolean(),
   hasPendingRequest: z.boolean(),
+  // Privacy settings
+  showAge: z.boolean().optional(),
+  showLocation: z.boolean().optional(),
+  showLastSeen: z.boolean().optional(),
+  // Location data (only for map display)
+  location: z.object({
+    type: z.literal(\"Point\"),
+    coordinates: z.array(z.number()).length(2), // [lng, lat]
+  }).optional(),
 });
 
 export const NearbyUsersQuerySchema = z.object({
