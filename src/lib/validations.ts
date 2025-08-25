@@ -1,4 +1,4 @@
-import { z } from \"zod\";
+import { z } from "zod";
 
 // ============================================================================
 // Authentication Schemas
@@ -7,13 +7,13 @@ import { z } from \"zod\";
 export const LoginSchema = z.object({
   email: z
     .string()
-    .email(\"Invalid email format\")
-    .min(1, \"Email is required\")
+    .email("Invalid email format")
+    .min(1, "Email is required")
     .toLowerCase(),
   password: z
     .string()
-    .min(6, \"Password must be at least 6 characters\")
-    .max(100, \"Password is too long\"),
+    .min(6, "Password must be at least 6 characters")
+    .max(100, "Password is too long"),
 });
 
 export const RegisterSchema = z
@@ -210,8 +210,17 @@ export const NearbyUsersQuerySchema = z.object({
 // Friend System Schemas
 // ============================================================================
 
+export const SendFriendRequestSchema = z.object({
+  toUserId: objectIdSchema,
+});
+
+export const RespondFriendRequestSchema = z.object({
+  requestId: objectIdSchema,
+  action: z.enum(["accepted", "rejected"]),
+});
+
 export const FriendRequestSchema = z.object({
-  to: z.string().min(1, \"User ID is required\"),
+  to: z.string().min(1, "User ID is required"),
 });
 
 export const FriendResponseSchema = z.object({

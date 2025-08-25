@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Search, MessageCircle, User, Settings, Users, Wifi, Bluetooth, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useUser, useTotalUnreadCount } from '@/store';
+import { useUser, useTotalUnreadCount, useFriendStore } from '@/store';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 
@@ -16,11 +16,18 @@ const navigation = [
     description: 'Find people nearby',
   },
   {
+    name: 'Friends',
+    href: '/dashboard/friends',
+    icon: Users,
+    description: 'Manage friends and requests',
+    badge: 'friends', // Will show friend request count
+  },
+  {
     name: 'Chat',
     href: '/dashboard/chat',
     icon: MessageCircle,
     description: 'Messages and conversations',
-    badge: true, // Will show unread count
+    badge: 'chat', // Will show unread count
   },
   {
     name: 'Profile',
@@ -58,16 +65,18 @@ export function Sidebar() {
   const pathname = usePathname();
   const user = useUser();
   const unreadCount = useTotalUnreadCount();
+  const { getFriendRequestCount } = useFriendStore();
+  const friendRequestCount = getFriendRequestCount();
 
   return (
-    <div className=\"flex h-full flex-col border-r border-border bg-card\">
+    <div className="flex h-full flex-col border-r border-border bg-card">
       {/* Header */}
-      <div className=\"flex h-16 items-center px-6 border-b border-border\">
-        <div className=\"flex items-center space-x-2\">
-          <div className=\"flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold\">
+      <div className="flex h-16 items-center px-6 border-b border-border">
+        <div className="flex items-center space-x-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
             F
           </div>
-          <span className=\"text-lg font-semibold text-foreground\">
+          <span className="text-lg font-semibold text-foreground">
             FriendFinder
           </span>
         </div>
@@ -75,18 +84,18 @@ export function Sidebar() {
 
       {/* User Info */}
       {user && (
-        <div className=\"flex items-center space-x-3 px-6 py-4 border-b border-border\">
-          <Avatar className=\"h-10 w-10\">
+        <div className="flex items-center space-x-3 px-6 py-4 border-b border-border">
+          <Avatar className="h-10 w-10">
             <AvatarImage src={user.profilePicture} alt={user.username} />
             <AvatarFallback>
               {user.username.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div className=\"flex-1 min-w-0\">
-            <p className=\"text-sm font-medium text-foreground truncate\">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground truncate">
               {user.username}
             </p>
-            <p className=\"text-xs text-muted-foreground truncate\">
+            <p className="text-xs text-muted-foreground truncate">
               {user.email}
             </p>
           </div>
@@ -94,11 +103,20 @@ export function Sidebar() {
       )}
 
       {/* Navigation */}
-      <nav className=\"flex-1 space-y-2 px-3 py-4\">
-        <div className=\"space-y-1\">
+      <nav className="flex-1 space-y-2 px-3 py-4">
+        <div className="space-y-1">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
-            const showBadge = item.badge && unreadCount > 0;
+            let badgeCount = 0;
+            let showBadge = false;
+            
+            if (item.badge === 'chat' && unreadCount > 0) {
+              badgeCount = unreadCount;
+              showBadge = true;
+            } else if (item.badge === 'friends' && friendRequestCount > 0) {
+              badgeCount = friendRequestCount;
+              showBadge = true;
+            }
             
             return (
               <Link
@@ -117,13 +135,13 @@ export function Sidebar() {
                     isActive ? 'text-primary-foreground' : 'text-muted-foreground'
                   )}
                 />
-                <span className=\"flex-1\">{item.name}</span>
+                <span className="flex-1">{item.name}</span>
                 {showBadge && (
                   <Badge 
-                    variant={isActive ? \"secondary\" : \"default\"}
-                    className=\"ml-2 h-5 px-1.5 text-xs\"
+                    variant={isActive ? "secondary" : "default"}
+                    className="ml-2 h-5 px-1.5 text-xs"
                   >
-                    {unreadCount > 99 ? '99+' : unreadCount}
+                    {badgeCount > 99 ? '99+' : badgeCount}
                   </Badge>
                 )}
               </Link>
@@ -132,24 +150,24 @@ export function Sidebar() {
         </div>
 
         {/* Discovery Section */}
-        <div className=\"pt-6\">
-          <div className=\"px-3 pb-2\">
-            <h3 className=\"text-xs font-semibold text-muted-foreground uppercase tracking-wide\">
+        <div className="pt-6">
+          <div className="px-3 pb-2">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Discovery Methods
             </h3>
           </div>
-          <div className=\"space-y-1\">
+          <div className="space-y-1">
             {discoveryModes.map((mode) => (
               <div
                 key={mode.name}
-                className=\"group flex items-center rounded-lg px-3 py-2 text-sm\"
+                className="group flex items-center rounded-lg px-3 py-2 text-sm"
               >
-                <mode.icon className=\"mr-3 h-4 w-4 flex-shrink-0 text-muted-foreground\" />
-                <div className=\"flex-1 min-w-0\">
-                  <p className=\"text-sm font-medium text-foreground truncate\">
+                <mode.icon className="mr-3 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">
                     {mode.name}
                   </p>
-                  <p className=\"text-xs text-muted-foreground truncate\">
+                  <p className="text-xs text-muted-foreground truncate">
                     {mode.description}
                   </p>
                 </div>
@@ -160,10 +178,10 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className=\"border-t border-border p-4\">
-        <div className=\"text-xs text-muted-foreground text-center\">
+      <div className="border-t border-border p-4">
+        <div className="text-xs text-muted-foreground text-center">
           <p>FriendFinder v1.0</p>
-          <p className=\"mt-1\">Privacy-first discovery</p>
+          <p className="mt-1">Privacy-first discovery</p>
         </div>
       </div>
     </div>

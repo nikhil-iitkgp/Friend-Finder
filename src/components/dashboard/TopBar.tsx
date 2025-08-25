@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { NotificationPanel } from '@/components/notifications/NotificationPanel';
+import { useNotificationStore } from '@/store/notificationStore';
 import { useUser } from '@/store';
 
 interface TopBarProps {
@@ -13,6 +15,7 @@ interface TopBarProps {
 
 export function TopBar({ onMenuClick }: TopBarProps) {
   const user = useUser();
+  const { unreadCount } = useNotificationStore();
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-background px-4 sm:px-6 lg:px-8">
@@ -41,17 +44,20 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       {/* Right Section */}
       <div className="flex items-center gap-3">
         {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          {/* Notification badge - you can connect this to a notifications store later */}
-          <Badge 
-            variant="destructive" 
-            className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center"
-          >
-            3
-          </Badge>
-          <span className="sr-only">Notifications</span>
-        </Button>
+        <NotificationPanel>
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center"
+              >
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Badge>
+            )}
+            <span className="sr-only">Notifications</span>
+          </Button>
+        </NotificationPanel>
 
         {/* User Avatar */}
         {user && (

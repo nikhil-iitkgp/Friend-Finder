@@ -17,4 +17,4 @@ export function SessionProvider({ children, session }: SessionProviderProps) {
       </AuthProvider>
     </NextAuthSessionProvider>
   );
-}"
+}

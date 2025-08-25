@@ -3,6 +3,8 @@ export { useUserStore } from './userStore';
 export { useDiscoveryStore } from './discoveryStore';
 export { useChatStore } from './chatStore';
 export { useCallStore } from './callStore';
+export { useFriendStore } from './friendStore';
+export { useNotificationStore } from './notificationStore';
 
 // Export user store selectors
 export {

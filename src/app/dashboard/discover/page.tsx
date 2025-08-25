@@ -10,7 +10,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Slider } from '@/components/ui/slider';
 import { GoogleMap } from '@/components/maps/GoogleMap';
 import { useDiscoveryStore, useDiscoveryActions } from '@/store/discoveryStore';
+import { useFriendStore, useChatStore } from '@/store';
 import { discoveryService } from '@/services/discoveryService';
+import { chatService } from '@/services/chatService';
 import { wifiService } from '@/services';
 import { toast } from 'sonner';
 import type { NearbyUser } from '@/lib/validations';
@@ -141,6 +143,9 @@ export default function DiscoverPage() {
     updateLocation
   } = useDiscoveryActions();
   
+  const { sendFriendRequest } = useFriendStore();
+  const { startConversation } = useChatStore();
+  
   const [mapCenter, setMapCenter] = useState({ lat: 40.7128, lng: -74.0060 }); // Default to NYC
   const [selectedUser, setSelectedUser] = useState<NearbyUser | null>(null);
 
@@ -166,19 +171,25 @@ export default function DiscoverPage() {
 
   const handleSendFriendRequest = async (userId: string) => {
     try {
-      // This will be implemented in the friend requests step
-      toast.success('Friend request sent!');
+      const success = await sendFriendRequest(userId);
+      if (success) {
+        // Refresh discovery results to update UI
+        await triggerDiscovery();
+      }
     } catch (error) {
-      toast.error('Failed to send friend request');
+      // Error already handled by the store
     }
   };
 
   const handleSendMessage = async (userId: string) => {
     try {
-      // This will be implemented in the chat step
-      toast.success('Opening chat...');
+      const conversation = await startConversation(userId);
+      if (conversation) {
+        // Navigate to chat page with the conversation
+        window.location.href = '/dashboard/chat';
+      }
     } catch (error) {
-      toast.error('Failed to open chat');
+      // Error already handled by the store
     }
   };
 

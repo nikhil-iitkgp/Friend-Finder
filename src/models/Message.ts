@@ -1,32 +1,65 @@
-import { Schema, model, models, Document } from \"mongoose\";
+import { Schema, model, models, Document } from "mongoose";
 
+// Message interface
 export interface IMessage extends Document {
   _id: string;
   senderId: Schema.Types.ObjectId;
   receiverId: Schema.Types.ObjectId;
+  threadId: string; // Computed from sorted user IDs for consistency
   text: string;
-  messageType: \"text\" | \"image\" | \"file\";
+  messageType: "text" | "image" | "file";
   metadata?: {
     fileName?: string;
     fileSize?: number;
     mimeType?: string;
     cloudinaryUrl?: string;
+    width?: number;
+    height?: number;
   };
-  createdAt: Date;
   readAt?: Date;
   editedAt?: Date;
+  deletedAt?: Date;
+  replyTo?: Schema.Types.ObjectId; // Reference to another message for replies
+  
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Thread/Conversation interface
+export interface IThread extends Document {
+  _id: string;
+  threadId: string; // Unique identifier for the conversation
+  participants: Schema.Types.ObjectId[]; // Array of user IDs
+  lastMessage?: Schema.Types.ObjectId;
+  lastMessageAt: Date;
+  unreadCount: Map<string, number>; // userId -> unread count
+  
+  // Thread metadata
+  isGroup: boolean;
+  groupName?: string;
+  groupImage?: string;
+  
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const MessageSchema = new Schema<IMessage>({
   senderId: {
     type: Schema.Types.ObjectId,
-    ref: \"User\",
+    ref: "User",
     required: true,
     index: true,
   },
   receiverId: {
     type: Schema.Types.ObjectId,
-    ref: \"User\",
+    ref: "User",
+    required: true,
+    index: true,
+  },
+  threadId: {
+    type: String,
     required: true,
     index: true,
   },
@@ -34,12 +67,11 @@ const MessageSchema = new Schema<IMessage>({
     type: String,
     required: true,
     maxlength: 2000,
-    trim: true,
   },
   messageType: {
     type: String,
-    enum: [\"text\", \"image\", \"file\"],
-    default: \"text\",
+    enum: ["text", "image", "file"],
+    default: "text",
   },
   metadata: {
     fileName: {
@@ -58,211 +90,173 @@ const MessageSchema = new Schema<IMessage>({
       type: String,
       maxlength: 500,
     },
+    width: {
+      type: Number,
+      min: 0,
+    },
+    height: {
+      type: Number,
+      min: 0,
+    },
   },
   readAt: {
     type: Date,
+    default: null,
   },
   editedAt: {
     type: Date,
+    default: null,
+  },
+  deletedAt: {
+    type: Date,
+    default: null,
+  },
+  replyTo: {
+    type: Schema.Types.ObjectId,
+    ref: "Message",
+    default: null,
   },
 }, {
   timestamps: true,
 });
 
-// Compound indexes for efficient message queries
-// Primary index for conversation queries (most common)
-MessageSchema.index({ 
-  senderId: 1, 
-  receiverId: 1, 
-  createdAt: -1 
-});
-
-// Reverse index for the other direction of conversation
-MessageSchema.index({ 
-  receiverId: 1, 
-  senderId: 1, 
-  createdAt: -1 
-});
-
-// Index for unread message queries
-MessageSchema.index({ 
-  receiverId: 1, 
-  readAt: 1,
-  createdAt: -1 
+// Thread/Conversation Schema
+const ThreadSchema = new Schema<IThread>({
+  threadId: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true,
+  },
+  participants: [{
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  }],
+  lastMessage: {
+    type: Schema.Types.ObjectId,
+    ref: "Message",
+  },
+  lastMessageAt: {
+    type: Date,
+    default: Date.now,
+    index: true,
+  },
+  unreadCount: {
+    type: Map,
+    of: Number,
+    default: new Map(),
+  },
+  isGroup: {
+    type: Boolean,
+    default: false,
+  },
+  groupName: {
+    type: String,
+    maxlength: 100,
+  },
+  groupImage: {
+    type: String,
+    maxlength: 500,
+  },
 }, {
-  partialFilterExpression: { readAt: { $exists: false } }
+  timestamps: true,
 });
 
-// Index for recent messages per user
-MessageSchema.index({ 
-  $or: [
-    { senderId: 1 },
-    { receiverId: 1 }
-  ],
-  createdAt: -1 
-});
+// Indexes for performance
 
-// Virtual for ID
-MessageSchema.virtual('id').get(function() {
-  return this._id.toHexString();
-});
+// Message indexes
+MessageSchema.index({ threadId: 1, createdAt: -1 }); // For message retrieval
+MessageSchema.index({ senderId: 1, createdAt: -1 }); // For user's sent messages
+MessageSchema.index({ receiverId: 1, readAt: 1 }); // For unread messages
+MessageSchema.index({ threadId: 1, deletedAt: 1 }); // For active messages
 
-MessageSchema.set('toJSON', {
-  virtuals: true,
-  transform: function(doc, ret) {
-    delete ret._id;
-    delete ret.__v;
-    return ret;
+// Thread indexes
+ThreadSchema.index({ participants: 1 }); // For finding conversations
+ThreadSchema.index({ lastMessageAt: -1 }); // For sorting conversations
+ThreadSchema.index({ "participants": 1, "lastMessageAt": -1 }); // Compound index
+
+// Pre-save middleware to generate threadId
+MessageSchema.pre('save', function(next) {
+  if (!this.threadId) {
+    // Generate consistent threadId from sorted participant IDs
+    const participants = [this.senderId.toString(), this.receiverId.toString()].sort();
+    this.threadId = participants.join('_');
   }
+  next();
 });
 
-// Instance methods
-MessageSchema.methods.markAsRead = function() {
-  if (!this.readAt) {
-    this.readAt = new Date();
+// Static methods for Message
+MessageSchema.statics.createThreadId = function(userId1: string, userId2: string): string {
+  return [userId1, userId2].sort().join('_');
+};
+
+MessageSchema.statics.findByThread = function(threadId: string, options: {
+  limit?: number;
+  offset?: number;
+  before?: string;
+} = {}) {
+  const { limit = 20, offset = 0, before } = options;
+  
+  let query = this.find({ 
+    threadId,
+    deletedAt: null 
+  }).populate('senderId', 'username profilePicture')
+    .populate('receiverId', 'username profilePicture');
+  
+  if (before) {
+    query = query.where('createdAt').lt(new Date(before));
   }
+  
+  return query
+    .sort({ createdAt: -1 })
+    .skip(offset)
+    .limit(limit);
 };
 
-MessageSchema.methods.edit = function(newText: string) {
-  this.text = newText;
-  this.editedAt = new Date();
-};
-
-MessageSchema.methods.isFromUser = function(userId: string): boolean {
-  return this.senderId.equals(userId);
-};
-
-MessageSchema.methods.isToUser = function(userId: string): boolean {
-  return this.receiverId.equals(userId);
-};
-
-MessageSchema.methods.isInConversationWith = function(userId: string): boolean {
-  return this.isFromUser(userId) || this.isToUser(userId);
-};
-
-// Static methods
-MessageSchema.statics.getConversation = function(
+// Static methods for Thread
+ThreadSchema.statics.findOrCreateThread = async function(
   userId1: string, 
-  userId2: string, 
-  limit: number = 20, 
-  offset: number = 0
-) {
-  return this.find({
-    $or: [
-      { senderId: userId1, receiverId: userId2 },
-      { senderId: userId2, receiverId: userId1 }
-    ]
-  })
-  .sort({ createdAt: -1 })
-  .limit(limit)
-  .skip(offset)
-  .populate('senderId', 'username profilePicture')
-  .populate('receiverId', 'username profilePicture');
-};
-
-MessageSchema.statics.getUnreadCount = function(
-  userId: string, 
-  fromUserId?: string
-) {
-  const query: any = {
-    receiverId: userId,
-    readAt: { $exists: false }
-  };
+  userId2: string
+): Promise<IThread> {
+  const threadId = [userId1, userId2].sort().join('_');
   
-  if (fromUserId) {
-    query.senderId = fromUserId;
+  let thread = await this.findOne({ threadId });
+  
+  if (!thread) {
+    thread = await this.create({
+      threadId,
+      participants: [userId1, userId2],
+      lastMessageAt: new Date(),
+      unreadCount: new Map([
+        [userId1, 0],
+        [userId2, 0]
+      ]),
+    });
   }
   
-  return this.countDocuments(query);
+  return thread;
 };
 
-MessageSchema.statics.markConversationAsRead = function(
-  userId: string, 
-  otherUserId: string
-) {
-  return this.updateMany(
-    {
-      senderId: otherUserId,
-      receiverId: userId,
-      readAt: { $exists: false }
-    },
-    {
-      readAt: new Date()
-    }
-  );
+ThreadSchema.statics.getConversationsForUser = function(userId: string, options: {
+  limit?: number;
+  offset?: number;
+} = {}) {
+  const { limit = 20, offset = 0 } = options;
+  
+  return this.find({ 
+    participants: userId 
+  })
+  .populate('participants', 'username profilePicture lastSeen')
+  .populate('lastMessage')
+  .sort({ lastMessageAt: -1 })
+  .skip(offset)
+  .limit(limit);
 };
 
-MessageSchema.statics.getRecentConversations = function(
-  userId: string, 
-  limit: number = 10
-) {
-  return this.aggregate([
-    {
-      $match: {
-        $or: [
-          { senderId: userId },
-          { receiverId: userId }
-        ]
-      }
-    },
-    {
-      $sort: { createdAt: -1 }
-    },
-    {
-      $group: {
-        _id: {
-          $cond: [
-            { $eq: [\"$senderId\", userId] },
-            \"$receiverId\",
-            \"$senderId\"
-          ]
-        },
-        lastMessage: { $first: \"$$ROOT\" },
-        unreadCount: {
-          $sum: {
-            $cond: [
-              {
-                $and: [
-                  { $eq: [\"$receiverId\", userId] },
-                  { $not: { $ifNull: [\"$readAt\", false] } }
-                ]
-              },
-              1,
-              0
-            ]
-          }
-        }
-      }
-    },
-    {
-      $sort: { \"lastMessage.createdAt\": -1 }
-    },
-    {
-      $limit: limit
-    },
-    {
-      $lookup: {
-        from: \"users\",
-        localField: \"_id\",
-        foreignField: \"_id\",
-        as: \"otherUser\",
-        pipeline: [
-          {
-            $project: {
-              username: 1,
-              profilePicture: 1,
-              lastSeen: 1
-            }
-          }
-        ]
-      }
-    },
-    {
-      $unwind: \"$otherUser\"
-    }
-  ]);
-};
+// Export models
+const Message = models.Message || model<IMessage>("Message", MessageSchema);
+const Thread = models.Thread || model<IThread>("Thread", ThreadSchema);
 
-const Message = models.Message || model<IMessage>('Message', MessageSchema);
-
+export { Message, Thread };
 export default Message;

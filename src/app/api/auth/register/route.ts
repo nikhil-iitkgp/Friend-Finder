@@ -84,4 +84,4 @@ export const POST = withDB(async (request: NextRequest) => {
     
     return handleAPIError(error, 'User registration');
   }
-});"
+});
