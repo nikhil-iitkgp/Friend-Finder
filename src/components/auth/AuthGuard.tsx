@@ -59,14 +59,14 @@ export function AuthGuard({
 // Loading screen component
 function AuthLoadingScreen() {
   return (
-    <div className=\"min-h-screen flex items-center justify-center bg-background\">
-      <div className=\"text-center space-y-4\">
-        <LoadingSpinner size=\"lg\" />
-        <div className=\"space-y-2\">
-          <h2 className=\"text-xl font-semibold text-foreground\">
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="text-center space-y-4">
+        <LoadingSpinner size="lg" />
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold text-foreground">
             FriendFinder
           </h2>
-          <p className=\"text-muted-foreground\">
+          <p className="text-muted-foreground">
             Loading your profile...
           </p>
         </div>
@@ -111,4 +111,4 @@ export function useAuthGuard(requireAuth: boolean = true) {
     isLoading: !isInitialized || isLoading,
     isAuthenticated,
   };
-}"
+}

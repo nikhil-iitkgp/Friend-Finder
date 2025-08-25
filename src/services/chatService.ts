@@ -1,4 +1,4 @@
-import { APIService } from './apiService';
+import { APIClient, apiClient } from './api';
 import type { Message, SendMessage, MessagesQuery } from '@/lib/validations';
 
 export interface Conversation {
@@ -53,7 +53,7 @@ export interface ChatMessage {
   updatedAt: Date;
 }
 
-export class ChatService extends APIService {
+export class ChatService extends APIClient {
   /**
    * Get user's conversations
    */

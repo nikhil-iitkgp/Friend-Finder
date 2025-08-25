@@ -19,6 +19,12 @@
     "test:integration": "jest --testPathPattern=integration",
     "test:api": "jest --testPathPattern=api",
     "test:components": "jest --testPathPattern=components",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report",
+    "test:all": "npm run test:ci && npm run test:e2e",
     "analyze": "ANALYZE=true npm run build",
     "docker:build": "docker build -t friendfinder .",
     "docker:run": "docker run -p 3000:3000 friendfinder",
@@ -46,6 +52,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
+    "@tailwindcss/postcss": "^4.1.12",
     "@types/node": "^24.3.0",
     "@types/react": "^19.1.11",
     "@types/react-dom": "^19.1.7",
@@ -75,6 +82,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
     "@types/bcryptjs": "^2.4.6",

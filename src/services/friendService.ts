@@ -1,7 +1,7 @@
-import { APIService } from './apiService';
+import { APIClient } from './api';
 import { FriendRequest, Friend } from '@/lib/validations';
 
-export class FriendService extends APIService {
+export class FriendService extends APIClient {
   /**
    * Send a friend request to another user
    */

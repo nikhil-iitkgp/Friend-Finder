@@ -183,6 +183,12 @@ export class WebBluetoothService extends BluetoothServiceInterface {
    * Generate a unique device ID for this browser session
    */
   private generateDeviceId(): string {
+    // Check if we're in browser environment
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      // Generate a temporary ID for server-side rendering
+      return this.generateMACAddress();
+    }
+    
     // In web, we'll generate a session-persistent ID
     let deviceId = localStorage.getItem('bluetooth-device-id');
     
@@ -216,6 +222,11 @@ export class WebBluetoothService extends BluetoothServiceInterface {
    * Generate a device name
    */
   private generateDeviceName(): string {
+    // Check if we're in browser environment
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      return 'Server Device';
+    }
+    
     const userAgent = navigator.userAgent;
     
     if (userAgent.includes('Chrome')) return 'Chrome Browser';
@@ -365,5 +376,13 @@ export function createBluetoothService(): BluetoothServiceInterface {
   return new WebBluetoothService();
 }
 
-// Singleton instance
-export const bluetoothService = createBluetoothService();
+// Lazy singleton instance
+let _bluetoothService: BluetoothServiceInterface | null = null;
+export const bluetoothService = {
+  get instance() {
+    if (!_bluetoothService) {
+      _bluetoothService = createBluetoothService();
+    }
+    return _bluetoothService;
+  }
+} as { instance: BluetoothServiceInterface };

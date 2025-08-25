@@ -1,66 +1,115 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 
+interface HealthResponse {
+  status: 'healthy' | 'unhealthy';
+  timestamp: string;
+  uptime: number;
+  database: 'connected' | 'disconnected' | 'error';
+  memory: {
+    used: number;
+    total: number;
+    percentage: number;
+  };
+  environment: string;
+  version: string;
+  checks: {
+    database: boolean;
+    memory: boolean;
+    uptime: boolean;
+  };
+}
+
 export async function GET(request: NextRequest) {
-  const healthcheck = {
-    uptime: process.uptime(),
-    message: 'OK',
+  const startTime = Date.now();
+  
+  // Initialize health check results
+  let databaseStatus: 'connected' | 'disconnected' | 'error' = 'disconnected';
+  let databaseCheck = false;
+  let memoryCheck = false;
+  let uptimeCheck = false;
+
+  // Check database connection
+  try {
+    await connectDB();
+    databaseStatus = 'connected';
+    databaseCheck = true;
+  } catch (error) {
+    console.error('Database health check failed:', error);
+    databaseStatus = 'error';
+    databaseCheck = false;
+  }
+
+  // Check memory usage
+  const memoryUsage = process.memoryUsage();
+  const totalMemory = memoryUsage.heapTotal;
+  const usedMemory = memoryUsage.heapUsed;
+  const memoryPercentage = (usedMemory / totalMemory) * 100;
+  
+  // Memory check passes if usage is below 90%
+  memoryCheck = memoryPercentage < 90;
+
+  // Check uptime (should be running for at least 5 seconds)
+  const uptime = process.uptime();
+  uptimeCheck = uptime > 5;
+
+  // Determine overall health status
+  const isHealthy = databaseCheck && memoryCheck && uptimeCheck;
+
+  const healthResponse: HealthResponse = {
+    status: isHealthy ? 'healthy' : 'unhealthy',
     timestamp: new Date().toISOString(),
-    service: 'FriendFinder',
+    uptime: uptime,
+    database: databaseStatus,
+    memory: {
+      used: Math.round(usedMemory / 1024 / 1024), // MB
+      total: Math.round(totalMemory / 1024 / 1024), // MB
+      percentage: Math.round(memoryPercentage * 100) / 100
+    },
+    environment: process.env.NODE_ENV || 'unknown',
     version: process.env.npm_package_version || '1.0.0',
-    environment: process.env.NODE_ENV || 'development',
+    checks: {
+      database: databaseCheck,
+      memory: memoryCheck,
+      uptime: uptimeCheck
+    }
   };
 
-  try {
-    // Check database connection
-    await connectDB();
-    
-    // Check environment variables
-    const requiredEnvVars = [
-      'MONGODB_URI',
-      'NEXTAUTH_SECRET',
-      'NEXTAUTH_URL',
-    ];
+  // Set appropriate status code
+  const statusCode = isHealthy ? 200 : 503;
+  
+  // Add response time header
+  const responseTime = Date.now() - startTime;
+  
+  const response = NextResponse.json(healthResponse, { status: statusCode });
+  
+  // Add headers
+  response.headers.set('X-Response-Time', `${responseTime}ms`);
+  response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
 
-    const missingEnvVars = requiredEnvVars.filter(
-      (envVar) => !process.env[envVar]
-    );
+  return response;
+}
 
-    if (missingEnvVars.length > 0) {
-      return NextResponse.json(
-        {
-          ...healthcheck,
-          status: 'ERROR',
-          message: 'Missing required environment variables',
-          missing: missingEnvVars,
-        },
-        { status: 500 }
-      );
-    }
+// Reject non-GET methods
+export async function POST() {
+  return NextResponse.json(
+    { error: 'Method not allowed' }, 
+    { status: 405, headers: { 'Allow': 'GET' } }
+  );
+}
 
-    // All checks passed
-    return NextResponse.json({
-      ...healthcheck,
-      status: 'OK',
-      database: 'connected',
-      checks: {
-        database: 'healthy',
-        environment: 'configured',
-      },
-    });
+export async function PUT() {
+  return NextResponse.json(
+    { error: 'Method not allowed' }, 
+    { status: 405, headers: { 'Allow': 'GET' } }
+  );
+}
 
-  } catch (error) {
-    console.error('Health check failed:', error);
-    
-    return NextResponse.json(
-      {
-        ...healthcheck,
-        status: 'ERROR',
-        message: 'Health check failed',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        database: 'disconnected',
-      },
-      { status: 503 }
-    );
-  }
+export async function DELETE() {
+  return NextResponse.json(
+    { error: 'Method not allowed' }, 
+    { status: 405, headers: { 'Allow': 'GET' } }
+  );
 }

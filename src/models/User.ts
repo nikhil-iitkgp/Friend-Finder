@@ -289,4 +289,5 @@ UserSchema.methods.updateBluetoothId = function(bluetoothId?: string) {
 
 const User = models.User || model<IUser>('User', UserSchema);
 
+export { User };
 export default User;

@@ -1,5 +1,5 @@
-import { NextResponse } from \"next/server\";
-import connectDB from \"./mongoose\";
+import { NextResponse } from "next/server";
+import connectDB from "./mongoose";
 
 /**
  * Middleware wrapper for API routes that need database connection
@@ -14,9 +14,9 @@ export function withDB<T extends any[]>(
       await connectDB();
       return await handler(...args);
     } catch (error) {
-      console.error(\"Database connection error:\", error);
+      console.error("Database connection error:", error);
       return NextResponse.json(
-        { error: \"Database connection failed\" },
+        { error: "Database connection failed" },
         { status: 500 }
       );
     }
@@ -30,31 +30,31 @@ export function withDB<T extends any[]>(
  * @returns NextResponse with error details
  */
 export function handleAPIError(error: any, context?: string): NextResponse {
-  console.error(`API Error${context ? ` (${context})` : \"\"}: `, error);
+  console.error(`API Error${context ? ` (${context})` : ""}: `, error);
   
-  if (error.name === \"ValidationError\") {
+  if (error.name === "ValidationError") {
     return NextResponse.json(
-      { error: \"Validation failed\", details: error.message },
+      { error: "Validation failed", details: error.message },
       { status: 400 }
     );
   }
   
-  if (error.name === \"CastError\") {
+  if (error.name === "CastError") {
     return NextResponse.json(
-      { error: \"Invalid ID format\" },
+      { error: "Invalid ID format" },
       { status: 400 }
     );
   }
   
   if (error.code === 11000) {
     return NextResponse.json(
-      { error: \"Duplicate entry\", field: Object.keys(error.keyPattern)[0] },
+      { error: "Duplicate entry", field: Object.keys(error.keyPattern)[0] },
       { status: 409 }
     );
   }
   
   return NextResponse.json(
-    { error: \"Internal server error\" },
+    { error: "Internal server error" },
     { status: 500 }
   );
 }
@@ -69,7 +69,7 @@ export async function parseRequestBody(request: Request): Promise<any> {
     const body = await request.text();
     return body ? JSON.parse(body) : null;
   } catch (error) {
-    throw new Error(\"Invalid JSON in request body\");
+    throw new Error("Invalid JSON in request body");
   }
 }
 

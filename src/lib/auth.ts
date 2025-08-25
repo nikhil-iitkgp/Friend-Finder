@@ -1,9 +1,9 @@
-import { NextAuthOptions } from \"next-auth\";
-import CredentialsProvider from \"next-auth/providers/credentials\";
-import GoogleProvider from \"next-auth/providers/google\";
-import bcrypt from \"bcryptjs\";
-import connectDB from \"./mongoose\";
-import User, { IUser } from \"@/models/User\";
+import { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
+import bcrypt from "bcryptjs";
+import connectDB from "./mongoose";
+import User, { IUser } from "@/models/User";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -12,14 +12,14 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
     CredentialsProvider({
-      name: \"credentials\",
+      name: "credentials",
       credentials: {
-        email: { label: \"Email\", type: \"email\" },
-        password: { label: \"Password\", type: \"password\" },
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error(\"Email and password are required\");
+          throw new Error("Email and password are required");
         }
 
         try {
@@ -27,10 +27,10 @@ export const authOptions: NextAuthOptions = {
           
           const user = await User.findOne({ 
             email: credentials.email.toLowerCase() 
-          }).select(\"+passwordHash\");
+          }).select("+passwordHash");
           
           if (!user || !user.passwordHash) {
-            throw new Error(\"Invalid credentials\");
+            throw new Error("Invalid credentials");
           }
           
           const isPasswordValid = await bcrypt.compare(
@@ -39,7 +39,7 @@ export const authOptions: NextAuthOptions = {
           );
           
           if (!isPasswordValid) {
-            throw new Error(\"Invalid credentials\");
+            throw new Error("Invalid credentials");
           }
           
           return {
@@ -49,7 +49,7 @@ export const authOptions: NextAuthOptions = {
             image: user.profilePicture || null,
           };
         } catch (error) {
-          console.error(\"Authorization error:\", error);
+          console.error("Authorization error:", error);
           return null;
         }
       },
@@ -58,12 +58,12 @@ export const authOptions: NextAuthOptions = {
   
   callbacks: {
     async signIn({ user, account, profile }) {
-      if (account?.provider === \"google\") {
+      if (account?.provider === "google") {
         try {
           await connectDB();
           
           // Check if user exists
-          let existingUser = await User.findOne({
+          const existingUser = await User.findOne({
             $or: [
               { email: user.email },
               { googleId: account.providerAccountId }
@@ -98,7 +98,7 @@ export const authOptions: NextAuthOptions = {
           
           return true;
         } catch (error) {
-          console.error(\"Google sign-in error:\", error);
+          console.error("Google sign-in error:", error);
           return false;
         }
       }
@@ -124,12 +124,12 @@ export const authOptions: NextAuthOptions = {
   },
   
   pages: {
-    signIn: \"/login\",
-    signUp: \"/register\",
+    signIn: "/login",
+    signUp: "/register",
   },
   
   session: {
-    strategy: \"jwt\",
+    strategy: "jwt",
   },
   
   secret: process.env.NEXTAUTH_SECRET,
@@ -142,7 +142,7 @@ export async function getCurrentUser(userId: string): Promise<IUser | null> {
     const user = await User.findById(userId);
     return user;
   } catch (error) {
-    console.error(\"Error getting current user:\", error);
+    console.error("Error getting current user:", error);
     return null;
   }
 }

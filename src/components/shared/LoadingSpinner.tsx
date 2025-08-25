@@ -32,10 +32,10 @@ export function LoadingSpinner({
         colorClasses[color],
         className
       )}
-      role=\"status\"
-      aria-label=\"Loading\"
+      role="status"
+      aria-label="Loading"
     >
-      <span className=\"sr-only\">Loading...</span>
+      <span className="sr-only">Loading...</span>
     </div>
   );
 }
@@ -44,9 +44,9 @@ export function LoadingSpinner({
 export function ButtonSpinner({ className }: { className?: string }) {
   return (
     <LoadingSpinner 
-      size=\"sm\" 
+      size="sm" 
       className={cn('mr-2', className)}
-      color=\"secondary\"
+      color="secondary"
     />
   );
 }
@@ -64,9 +64,9 @@ export function LoadingOverlay({
       'fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm',
       className
     )}>
-      <div className=\"text-center space-y-4\">
-        <LoadingSpinner size=\"lg\" />
-        <p className=\"text-muted-foreground\">{message}</p>
+      <div className="text-center space-y-4">
+        <LoadingSpinner size="lg" />
+        <p className="text-muted-foreground">{message}</p>
       </div>
     </div>
   );
@@ -92,9 +92,9 @@ export function LoadingSkeleton({
 export function LoadingDots({ className }: { className?: string }) {
   return (
     <div className={cn('flex space-x-1', className)}>
-      <div className=\"h-2 w-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]\" />
-      <div className=\"h-2 w-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]\" />
-      <div className=\"h-2 w-2 bg-current rounded-full animate-bounce\" />
+      <div className="h-2 w-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]" />
+      <div className="h-2 w-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]" />
+      <div className="h-2 w-2 bg-current rounded-full animate-bounce" />
     </div>
   );
-}"
+}

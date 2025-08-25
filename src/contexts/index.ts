@@ -6,4 +6,4 @@ export { SessionProvider } from './SessionProvider';
 export { useAuth, useAuthStatus, useAuthActions } from './AuthContext';
 
 // Export components
-export { AuthGuard, withAuthGuard, useAuthGuard } from '../components/auth/AuthGuard';"
+export { AuthGuard, withAuthGuard, useAuthGuard } from '../components/auth/AuthGuard';

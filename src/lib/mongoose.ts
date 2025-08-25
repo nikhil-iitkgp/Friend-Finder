@@ -1,7 +1,7 @@
-import mongoose from \"mongoose\";
+import mongoose from "mongoose";
 
 if (!process.env.MONGODB_URI) {
-  throw new Error(\"Please define the MONGODB_URI environment variable inside .env.local\");
+  throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
 }
 
 const MONGODB_URI: string = process.env.MONGODB_URI;
@@ -31,7 +31,7 @@ async function connectDB(): Promise<typeof mongoose> {
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      console.log(\"✅ Connected to MongoDB\");
+      console.log("✅ Connected to MongoDB");
       return mongoose;
     });
   }
@@ -53,7 +53,7 @@ export async function checkDBConnection(): Promise<boolean> {
     const state = mongoose.connection.readyState;
     return state === 1; // 1 = connected
   } catch (error) {
-    console.error(\"❌ Database connection failed:\", error);
+    console.error("❌ Database connection failed:", error);
     return false;
   }
 }
@@ -64,10 +64,11 @@ export async function disconnectDB(): Promise<void> {
     await mongoose.disconnect();
     cached.conn = null;
     cached.promise = null;
-    console.log(\"🔌 Disconnected from MongoDB\");
+    console.log("🔌 Disconnected from MongoDB");
   } catch (error) {
-    console.error(\"❌ Error disconnecting from MongoDB:\", error);
+    console.error("❌ Error disconnecting from MongoDB:", error);
   }
 }
 
+export { connectDB };
 export default connectDB;

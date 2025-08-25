@@ -1,6 +1,21 @@
 import { z } from "zod";
 
 // ============================================================================
+// Form Validation Helpers
+// ============================================================================
+
+// Helper function to validate ObjectId format
+export const objectIdSchema = z
+  .string()
+  .regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId format");
+
+// Helper for optional ObjectId
+export const optionalObjectIdSchema = objectIdSchema.optional();
+
+// Helper for arrays of ObjectIds
+export const objectIdArraySchema = z.array(objectIdSchema);
+
+// ============================================================================
 // Authentication Schemas
 // ============================================================================
 
@@ -20,32 +35,32 @@ export const RegisterSchema = z
   .object({
     username: z
       .string()
-      .min(3, \"Username must be at least 3 characters\")
-      .max(20, \"Username must not exceed 20 characters\")
+      .min(3, "Username must be at least 3 characters")
+      .max(20, "Username must not exceed 20 characters")
       .regex(
         /^[a-zA-Z0-9_]+$/,
-        \"Username can only contain letters, numbers, and underscores\"
+        "Username can only contain letters, numbers, and underscores"
       ),
     email: z
       .string()
-      .email(\"Invalid email format\")
-      .min(1, \"Email is required\")
+      .email("Invalid email format")
+      .min(1, "Email is required")
       .toLowerCase(),
     password: z
       .string()
-      .min(6, \"Password must be at least 6 characters\")
-      .max(100, \"Password is too long\")
+      .min(6, "Password must be at least 6 characters")
+      .max(100, "Password is too long")
       .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)/,
-        \"Password must contain at least one uppercase letter, one lowercase letter, and one number\"
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+        "Password must contain at least one uppercase letter, one lowercase letter, and one number"
       ),
     confirmPassword: z
       .string()
-      .min(1, \"Please confirm your password\"),
+      .min(1, "Please confirm your password"),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: \"Passwords don't match\",
-    path: [\"confirmPassword\"],
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
   });
 
 // ============================================================================
@@ -55,48 +70,48 @@ export const RegisterSchema = z
 export const ProfileUpdateSchema = z.object({
   username: z
     .string()
-    .min(3, \"Username must be at least 3 characters\")
-    .max(20, \"Username must not exceed 20 characters\")
+    .min(3, "Username must be at least 3 characters")
+    .max(20, "Username must not exceed 20 characters")
     .regex(
       /^[a-zA-Z0-9_]+$/,
-      \"Username can only contain letters, numbers, and underscores\"
+      "Username can only contain letters, numbers, and underscores"
     )
     .optional(),
   firstName: z
     .string()
-    .min(1, \"First name is required\")
-    .max(50, \"First name must not exceed 50 characters\")
+    .min(1, "First name is required")
+    .max(50, "First name must not exceed 50 characters")
     .optional(),
   lastName: z
     .string()
-    .min(1, \"Last name is required\")
-    .max(50, \"Last name must not exceed 50 characters\")
+    .min(1, "Last name is required")
+    .max(50, "Last name must not exceed 50 characters")
     .optional(),
   bio: z
     .string()
-    .max(500, \"Bio must not exceed 500 characters\")
+    .max(500, "Bio must not exceed 500 characters")
     .optional(),
   occupation: z
     .string()
-    .max(100, \"Occupation must not exceed 100 characters\")
+    .max(100, "Occupation must not exceed 100 characters")
     .optional(),
   interests: z
-    .array(z.string().max(50, \"Interest must not exceed 50 characters\"))
-    .max(20, \"You can have at most 20 interests\")
+    .array(z.string().max(50, "Interest must not exceed 50 characters"))
+    .max(20, "You can have at most 20 interests")
     .optional(),
   birthday: z
     .string()
-    .datetime(\"Invalid birthday format\")
+    .datetime("Invalid birthday format")
     .optional(),
   profilePicture: z
     .string()
-    .url(\"Invalid profile picture URL\")
+    .url("Invalid profile picture URL")
     .optional(),
   isDiscoverable: z.boolean().optional(),
   discoveryRange: z
     .number()
-    .min(100, \"Discovery range must be at least 100 meters\")
-    .max(50000, \"Discovery range must not exceed 50km\")
+    .min(100, "Discovery range must be at least 100 meters")
+    .max(50000, "Discovery range must not exceed 50km")
     .optional(),
   privacySettings: z.object({
     showAge: z.boolean().optional(),
@@ -127,12 +142,12 @@ export const UserProfileResponseSchema = z.object({
 export const CoordinatesSchema = z.object({
   latitude: z
     .number()
-    .min(-90, \"Latitude must be between -90 and 90\")
-    .max(90, \"Latitude must be between -90 and 90\"),
+    .min(-90, "Latitude must be between -90 and 90")
+    .max(90, "Latitude must be between -90 and 90"),
   longitude: z
     .number()
-    .min(-180, \"Longitude must be between -180 and 180\")
-    .max(180, \"Longitude must be between -180 and 180\"),
+    .min(-180, "Longitude must be between -180 and 180")
+    .max(180, "Longitude must be between -180 and 180"),
   accuracy: z.number().positive().optional(),
 });
 
@@ -143,7 +158,7 @@ export const PresenceUpdateSchema = z.object({
     .string()
     .regex(
       /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/,
-      \"Invalid BSSID format (MAC address)\"
+      "Invalid BSSID format (MAC address)"
     )
     .optional(),
 });
@@ -153,7 +168,7 @@ export const BluetoothUpdateSchema = z.object({
     .string()
     .regex(
       /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/,
-      \"Invalid Bluetooth ID format (MAC address)\"
+      "Invalid Bluetooth ID format (MAC address)"
     ),
 });
 
@@ -162,10 +177,10 @@ export const BluetoothScanSchema = z.object({
     .array(
       z.string().regex(
         /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/,
-        \"Invalid device ID format\"
+        "Invalid device ID format"
       )
     )
-    .max(50, \"Too many devices in scan result\"),
+    .max(50, "Too many devices in scan result"),
 });
 
 export const NearbyUserSchema = z.object({
@@ -187,23 +202,24 @@ export const NearbyUserSchema = z.object({
   showLastSeen: z.boolean().optional(),
   // Location data (only for map display)
   location: z.object({
-    type: z.literal(\"Point\"),
+    type: z.literal("Point"),
     coordinates: z.array(z.number()).length(2), // [lng, lat]
   }).optional(),
 });
 
 export const NearbyUsersQuerySchema = z.object({
   radius: z
-    .string()
-    .transform((val) => parseInt(val, 10))
+    .union([
+      z.string().transform((val) => parseInt(val, 10)),
+      z.number()
+    ])
     .pipe(
       z
         .number()
-        .min(100, \"Radius must be at least 100 meters\")
-        .max(50000, \"Radius must not exceed 50km\")
+        .min(100, "Radius must be at least 100 meters")
+        .max(50000, "Radius must not exceed 50km")
     )
-    .optional()
-    .default(\"5000\"),
+    .default(5000),
 });
 
 // ============================================================================
@@ -224,9 +240,9 @@ export const FriendRequestSchema = z.object({
 });
 
 export const FriendResponseSchema = z.object({
-  from: z.string().min(1, \"User ID is required\"),
-  status: z.enum([\"accepted\", \"rejected\"], {
-    errorMap: () => ({ message: \"Status must be 'accepted' or 'rejected'\" }),
+  from: z.string().min(1, "User ID is required"),
+  status: z.enum(["accepted", "rejected"], {
+    errorMap: () => ({ message: "Status must be 'accepted' or 'rejected'" }),
   }),
 });
 
@@ -247,7 +263,7 @@ export const MessageSchema = z.object({
   senderId: z.string(),
   receiverId: z.string(),
   text: z.string(),
-  messageType: z.enum([\"text\", \"image\", \"file\"]).default(\"text\"),
+  messageType: z.enum(["text", "image", "file"]).default("text"),
   metadata: z
     .object({
       fileName: z.string().optional(),
@@ -264,9 +280,9 @@ export const MessageSchema = z.object({
 export const SendMessageSchema = z.object({
   text: z
     .string()
-    .min(1, \"Message cannot be empty\")
-    .max(2000, \"Message is too long\"),
-  messageType: z.enum([\"text\", \"image\", \"file\"]).default(\"text\"),
+    .min(1, "Message cannot be empty")
+    .max(2000, "Message is too long"),
+  messageType: z.enum(["text", "image", "file"]).default("text"),
   metadata: z
     .object({
       fileName: z.string().optional(),
@@ -284,17 +300,17 @@ export const MessagesQuerySchema = z.object({
     .pipe(
       z
         .number()
-        .min(1, \"Limit must be at least 1\")
-        .max(100, \"Limit must not exceed 100\")
+        .min(1, "Limit must be at least 1")
+        .max(100, "Limit must not exceed 100")
     )
     .optional()
-    .default(\"20\"),
+    .default("20"),
   offset: z
     .string()
     .transform((val) => parseInt(val, 10))
-    .pipe(z.number().min(0, \"Offset must be non-negative\"))
+    .pipe(z.number().min(0, "Offset must be non-negative"))
     .optional()
-    .default(\"0\"),
+    .default("0"),
   before: z.string().optional(), // message ID for pagination
 });
 
@@ -317,7 +333,7 @@ export const FileUploadSchema = z.object({
   maxSize: z.number().default(5 * 1024 * 1024), // 5MB default
   allowedTypes: z
     .array(z.string())
-    .default([\"image/jpeg\", \"image/png\", \"image/webp\", \"image/gif\"]),
+    .default(["image/jpeg", "image/png", "image/webp", "image/gif"]),
 });
 
 // ============================================================================
@@ -363,7 +379,7 @@ export const ICECandidateSchema = z.object({
 });
 
 export const RTCSessionDescriptionSchema = z.object({
-  type: z.enum([\"offer\", \"answer\", \"pranswer\", \"rollback\"]),
+  type: z.enum(["offer", "answer", "pranswer", "rollback"]),
   sdp: z.string(),
 });
 
@@ -371,23 +387,12 @@ export const RTCSessionDescriptionSchema = z.object({
 // Form Validation Helpers
 // ============================================================================
 
-// Helper function to validate ObjectId format
-export const objectIdSchema = z
-  .string()
-  .regex(/^[0-9a-fA-F]{24}$/, \"Invalid ObjectId format\");
-
-// Helper for optional ObjectId
-export const optionalObjectIdSchema = objectIdSchema.optional();
-
-// Helper for arrays of ObjectIds
-export const objectIdArraySchema = z.array(objectIdSchema);
-
 // Email validation with additional checks
 export const emailSchema = z
   .string()
-  .email(\"Invalid email format\")
-  .min(1, \"Email is required\")
-  .max(254, \"Email is too long\")
+  .email("Invalid email format")
+  .min(1, "Email is required")
+  .max(254, "Email is too long")
   .toLowerCase()
   .refine(
     (email) => {
@@ -396,14 +401,14 @@ export const emailSchema = z
       return parts.length === 2 && parts[0].length > 0 && parts[1].length > 0;
     },
     {
-      message: \"Invalid email format\",
+      message: "Invalid email format",
     }
   );
 
 // URL validation with optional protocols
 export const urlSchema = z
   .string()
-  .url(\"Invalid URL format\")
+  .url("Invalid URL format")
   .refine(
     (url) => {
       try {
@@ -414,7 +419,7 @@ export const urlSchema = z
       }
     },
     {
-      message: \"URL must use HTTP or HTTPS protocol\",
+      message: "URL must use HTTP or HTTPS protocol",
     }
   );
 

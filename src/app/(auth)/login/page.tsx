@@ -84,36 +84,36 @@ export default function LoginPage() {
 
   return (
     <Card>
-      <CardHeader className=\"space-y-1\">
-        <CardTitle className=\"text-2xl font-bold text-center\">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold text-center">
           Welcome back
         </CardTitle>
-        <CardDescription className=\"text-center\">
+        <CardDescription className="text-center">
           Sign in to your FriendFinder account
         </CardDescription>
       </CardHeader>
-      <CardContent className=\"space-y-4\">
+      <CardContent className="space-y-4">
         {/* Google Sign In */}
         <Button 
-          variant=\"outline\" 
-          className=\"w-full\"
+          variant="outline" 
+          className="w-full"
           onClick={handleGoogleSignIn}
           disabled={isLoading || isGoogleLoading}
         >
           {isGoogleLoading ? (
             <ButtonSpinner />
           ) : (
-            <Icons.google className=\"mr-2 h-4 w-4\" />
+            <Icons.google className="mr-2 h-4 w-4" />
           )}
           Continue with Google
         </Button>
         
-        <div className=\"relative\">
-          <div className=\"absolute inset-0 flex items-center\">
-            <Separator className=\"w-full\" />
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <Separator className="w-full" />
           </div>
-          <div className=\"relative flex justify-center text-xs uppercase\">
-            <span className=\"bg-background px-2 text-muted-foreground\">
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">
               Or continue with
             </span>
           </div>
@@ -121,18 +121,18 @@ export default function LoginPage() {
 
         {/* Email/Password Form */}
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className=\"space-y-4\">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name=\"email\"
+              name="email"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder=\"Enter your email\"
-                      type=\"email\"
-                      autoComplete=\"email\"
+                      placeholder="Enter your email"
+                      type="email"
+                      autoComplete="email"
                       disabled={isLoading || isGoogleLoading}
                       {...field}
                     />
@@ -143,15 +143,15 @@ export default function LoginPage() {
             />
             <FormField
               control={form.control}
-              name=\"password\"
+              name="password"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder=\"Enter your password\"
-                      type=\"password\"
-                      autoComplete=\"current-password\"
+                      placeholder="Enter your password"
+                      type="password"
+                      autoComplete="current-password"
                       disabled={isLoading || isGoogleLoading}
                       {...field}
                     />
@@ -161,8 +161,8 @@ export default function LoginPage() {
               )}
             />
             <Button 
-              type=\"submit\" 
-              className=\"w-full\"
+              type="submit" 
+              className="w-full"
               disabled={isLoading || isGoogleLoading}
             >
               {isLoading ? (
@@ -178,19 +178,19 @@ export default function LoginPage() {
         </Form>
 
         {/* Links */}
-        <div className=\"text-center space-y-2\">
-          <p className=\"text-sm text-muted-foreground\">
+        <div className="text-center space-y-2">
+          <p className="text-sm text-muted-foreground">
             Don't have an account?{' '}
             <Link 
-              href=\"/register\" 
-              className=\"text-primary hover:underline font-medium\"
+              href="/register" 
+              className="text-primary hover:underline font-medium"
             >
               Sign up
             </Link>
           </p>
           <Link 
-            href=\"/forgot-password\" 
-            className=\"text-sm text-muted-foreground hover:text-primary hover:underline\"
+            href="/forgot-password" 
+            className="text-sm text-muted-foreground hover:text-primary hover:underline"
           >
             Forgot your password?
           </Link>
@@ -198,4 +198,4 @@ export default function LoginPage() {
       </CardContent>
     </Card>
   );
-}"
+}

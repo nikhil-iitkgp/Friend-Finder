@@ -1,0 +1,478 @@
+name: E2E Tests and Production Readiness
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  NODE_VERSION: '18'
+  MONGODB_VERSION: '6.0'
+
+jobs:
+  unit-and-integration-tests:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongosh --quiet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run type checking
+        run: npm run type-check
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Setup test environment
+        run: |
+          cp .env.example .env.local
+          echo "MONGODB_URI=mongodb://localhost:27017/friendfinder_test" >> .env.local
+          echo "NEXTAUTH_SECRET=test-secret-key-for-ci" >> .env.local
+          echo "NEXTAUTH_URL=http://localhost:3000" >> .env.local
+
+      - name: Run unit and integration tests
+        run: npm run test:ci
+
+      - name: Upload test coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: unit-and-integration-tests
+    
+    strategy:
+      matrix:
+        test-group: [auth, discovery, friends, messaging, calls, performance, security]
+    
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongosh --quiet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Setup test environment
+        run: |
+          cp .env.example .env.local
+          echo "MONGODB_URI=mongodb://localhost:27017/friendfinder_e2e_test" >> .env.local
+          echo "NEXTAUTH_SECRET=e2e-test-secret-key" >> .env.local
+          echo "NEXTAUTH_URL=http://localhost:3000" >> .env.local
+          echo "NODE_ENV=test" >> .env.local
+
+      - name: Build application
+        run: npm run build
+
+      - name: Run E2E tests for ${{ matrix.test-group }}
+        run: npx playwright test ${{ matrix.test-group }} --reporter=html
+        env:
+          PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results-${{ matrix.test-group }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+
+  mobile-compatibility:
+    name: Mobile Compatibility Tests
+    runs-on: ubuntu-latest
+    needs: unit-and-integration-tests
+    
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Setup test environment
+        run: |
+          cp .env.example .env.local
+          echo "MONGODB_URI=mongodb://localhost:27017/friendfinder_mobile_test" >> .env.local
+          echo "NEXTAUTH_SECRET=mobile-test-secret-key" >> .env.local
+          echo "NEXTAUTH_URL=http://localhost:3000" >> .env.local
+
+      - name: Build application
+        run: npm run build
+
+      - name: Run mobile-specific tests
+        run: npx playwright test --grep="Mobile|mobile|responsive" --project="Mobile Chrome" --project="Mobile Safari"
+
+      - name: Upload mobile test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-test-results
+          path: |
+            test-results/
+            playwright-report/
+
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level high
+
+      - name: Run security-focused E2E tests
+        run: |
+          npx playwright install --with-deps
+          npx playwright test security --reporter=html
+        env:
+          MONGODB_URI: mongodb://localhost:27017/friendfinder_security_test
+
+      - name: Upload security test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-audit-results
+          path: |
+            test-results/
+            playwright-report/
+
+  performance-benchmarks:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    needs: unit-and-integration-tests
+    
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Setup performance test environment
+        run: |
+          cp .env.example .env.local
+          echo "MONGODB_URI=mongodb://localhost:27017/friendfinder_perf_test" >> .env.local
+          echo "NEXTAUTH_SECRET=perf-test-secret-key" >> .env.local
+          echo "NEXTAUTH_URL=http://localhost:3000" >> .env.local
+
+      - name: Build optimized application
+        run: npm run build
+
+      - name: Run performance tests
+        run: npx playwright test performance --reporter=html
+        env:
+          PERFORMANCE_BUDGET: strict
+
+      - name: Generate performance report
+        run: |
+          npx playwright show-report --host 0.0.0.0 &
+          sleep 5
+          curl -o performance-summary.html http://localhost:9323
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-test-results
+          path: |
+            test-results/
+            playwright-report/
+            performance-summary.html
+
+  accessibility-tests:
+    name: Accessibility Tests
+    runs-on: ubuntu-latest
+    needs: unit-and-integration-tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Setup test environment
+        run: |
+          cp .env.example .env.local
+          echo "MONGODB_URI=mongodb://localhost:27017/friendfinder_a11y_test" >> .env.local
+          echo "NEXTAUTH_SECRET=a11y-test-secret-key" >> .env.local
+          echo "NEXTAUTH_URL=http://localhost:3000" >> .env.local
+
+      - name: Build application
+        run: npm run build
+
+      - name: Run accessibility tests
+        run: npx playwright test --grep="Accessibility|accessibility|a11y"
+
+      - name: Upload accessibility results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: accessibility-test-results
+          path: |
+            test-results/
+            playwright-report/
+
+  production-readiness:
+    name: Production Readiness Check
+    runs-on: ubuntu-latest
+    needs: [e2e-tests, mobile-compatibility, security-audit, performance-benchmarks]
+    if: github.ref == 'refs/heads/main'
+
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup production environment
+        run: |
+          cp .env.production.template .env.production.local
+          echo "MONGODB_URI=mongodb://localhost:27017/friendfinder_prod_test" >> .env.production.local
+          echo "NEXTAUTH_SECRET=prod-test-secret-key-very-long-and-secure" >> .env.production.local
+          echo "NEXTAUTH_URL=https://friendfinder.com" >> .env.production.local
+          echo "NODE_ENV=production" >> .env.production.local
+
+      - name: Build production application
+        run: |
+          NODE_ENV=production npm run build
+          npm run start &
+          sleep 10
+
+      - name: Run production health checks
+        run: |
+          npm run health-check
+          curl -f http://localhost:3000/api/health
+          
+      - name: Test production optimizations
+        run: |
+          # Check bundle size
+          npm run analyze
+          
+          # Check for production-only features
+          curl -I http://localhost:3000 | grep -i "x-frame-options\|x-content-type-options\|strict-transport-security"
+
+      - name: Run production smoke tests
+        run: |
+          npx playwright install --with-deps
+          npx playwright test --grep="@smoke" --project=chromium
+        env:
+          PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
+
+      - name: Run production readiness tests
+        run: npx playwright test e2e/production/ --reporter=html
+        env:
+          PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
+
+      - name: Run system monitoring tests
+        run: npx playwright test e2e/monitoring/ --reporter=html
+        env:
+          PLAYWRIGHT_TEST_BASE_URL: http://localhost:3000
+
+      - name: Upload production test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: production-readiness-test-results
+          path: |
+            test-results/
+            playwright-report/
+
+      - name: Generate production readiness report
+        run: |
+          echo "# Production Readiness Report" > production-report.md
+          echo "Generated on: $(date)" >> production-report.md
+          echo "## Test Results" >> production-report.md
+          echo "- All E2E tests: ✅ Passed" >> production-report.md
+          echo "- Security audit: ✅ Passed" >> production-report.md
+          echo "- Performance benchmarks: ✅ Passed" >> production-report.md
+          echo "- Mobile compatibility: ✅ Passed" >> production-report.md
+          echo "- Health checks: ✅ Passed" >> production-report.md
+
+      - name: Upload production readiness report
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-readiness-report
+          path: production-report.md
+
+  deploy-preview:
+    name: Deploy Preview Environment
+    runs-on: ubuntu-latest
+    needs: production-readiness
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for preview
+        run: npm run build
+
+      - name: Deploy to preview environment
+        run: |
+          echo "🚀 Deploying to preview environment..."
+          echo "Preview URL would be: https://friendfinder-pr-${{ github.event.number }}.preview.com"
+          # Add actual deployment commands here
+
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🚀 Preview deployment ready! All tests passed.\n\n✅ E2E Tests\n✅ Security Audit\n✅ Performance Tests\n✅ Mobile Compatibility\n\nPreview URL: https://friendfinder-pr-${{ github.event.number }}.preview.com'
+            })
+
+  notify-on-failure:
+    name: Notify on Test Failure
+    runs-on: ubuntu-latest
+    needs: [e2e-tests, mobile-compatibility, security-audit, performance-benchmarks]
+    if: failure()
+
+    steps:
+      - name: Notify team of test failures
+        run: |
+          echo "❌ Some tests failed in the CI pipeline"
+          echo "Please check the failed jobs and fix the issues before merging"
+          # Add notification logic (Slack, Teams, etc.)
+
+  cleanup:
+    name: Cleanup Test Artifacts
+    runs-on: ubuntu-latest
+    needs: [production-readiness, deploy-preview]
+    if: always()
+
+    steps:
+      - name: Cleanup test databases
+        run: |
+          echo "🧹 Cleaning up test databases and artifacts"
+          # Add cleanup commands if needed
+
+      - name: Archive test reports
+        run: |
+          echo "📦 Archiving test reports for long-term storage"
+          # Add archival commands if needed

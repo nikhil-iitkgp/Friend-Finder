@@ -1,5 +1,5 @@
-import { getSession } from \"next-auth/react\";
-import type { APIResponse } from \"@/lib/validations\";
+import { getSession } from "next-auth/react";
+import type { APIResponse } from "@/lib/validations";
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
@@ -230,6 +230,10 @@ class APIClient {
 
 // Create singleton instance
 export const apiClient = new APIClient();
+
+// Export the class and create alias for backward compatibility
+export { APIClient };
+export const APIService = APIClient;
 
 // Export types
 export type { RequestConfig, APIResponseWithMeta };

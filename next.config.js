@@ -45,8 +45,9 @@ const nextConfig = {
       },
     ];
   },
+  serverExternalPackages: ['mongoose'],
   experimental: {
-    serverComponentsExternalPackages: ['mongoose'],
+    // Future experimental features can be added here
   },
 };
 

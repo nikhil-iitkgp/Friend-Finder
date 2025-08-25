@@ -186,4 +186,4 @@ export function useAuthActions() {
     ...userActions,
     isAuthenticated,
   };
-}"
+}
